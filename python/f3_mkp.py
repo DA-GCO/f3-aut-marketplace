@@ -1,4 +1,6 @@
 # Libraries
+from importlib.resources import path
+from unittest.mock import patch
 import pandas as pd
 from datetime import datetime
 import numpy as np
@@ -12,8 +14,6 @@ from python.cl_cleaning import CleaningText as ct
 
 Fecha = datetime.now().strftime('%d-%m-%Y')
 
-#from python.enviar_correo import enviar_correo, cuerpo_correo
-
 class F3MKP():
     dt_string   = datetime.now().strftime('%y%m%d')
     kpi         = pd.DataFrame()
@@ -22,11 +22,13 @@ class F3MKP():
     digitadores = const.get_digitadores()
 
     def __init__(self) -> None:
-        f3_name = '211210_f3'
-        self.kpi_name = '211210_kpi_f3' # TODO restaurar 
-        #f3_name        = input('Ingrese nombre de planilla F3: ')
-        #self.kpi_name  = input('Ingrese nombre de archivo kpi: ')
+        f3_name        = input('Ingrese nombre de planilla F3: ')
+        self.kpi_name  = input('Ingrese nombre de archivo kpi: ')
         self.f3c       = F3Cleaning(f3_name) # Inicializa la clase de limpieza para la planilla de f3
+        self.path = "python/config/path.txt"
+        with open(self.path, "r") as tf:
+                self.path = tf.read()
+        tf.close()
 
     def build_planilla(self):
         self.load_srx_files()
@@ -142,35 +144,35 @@ class F3MKP():
             print('-- Out: No hay registros para distribuir')
 
     def save_repo(self):
-        #consolidado_agg = pd.read_excel('reporte_distribucion/Reporte_distribucion_agg.xlsx')
-        #consolidado_desc = pd.read_excel('reporte_distribucion/Reporte_distribucion_local.xlsx')
+        path = self.path + "/reporte distribucion"
         reporte_local_agg = self.consolidado.groupby(["digitador_responsable","local_agg"])["cantidad"].count().reset_index()
         reporte_local_agg["fecha_distribucion"] = datetime.now().strftime(('%Y-%m-%d'))
         reporte_local_descrip = self.consolidado.groupby(["digitador_responsable","local_descrip"])["cantidad"].count().reset_index()
         reporte_local_descrip["fecha_distribucion"] = datetime.now().strftime(('%Y-%m-%d'))
-        #reporte_local_agg = pd.concat([consolidado_agg,reporte_local_agg])
-        #reporte_local_descrip= pd.concat([consolidado_desc,reporte_local_descrip])
-        reporte_local_agg.to_excel('reporte_distribucion/Reporte_distribucion_agg.xlsx',index=False)
-        reporte_local_descrip.to_excel('reporte_distribucion/Reporte_distribucion_local.xlsx',index=False)
-        print(f"-- El reporte de distribución se guardó correctamente")
+        reporte_local_agg.to_excel(f'{path}/Reporte_distribucion_agg.xlsx',index=False)
+        reporte_local_descrip.to_excel(f'{path}/Reporte_distribucion_local.xlsx',index=False)
+        print(f"-- El reporte  de distribución se guardó con éxito, ubicación: {path} ")
 
     def save_linio(self):   
+        path = self.path + "/archivos/linio"
         linio = self.consolidado.loc[(self.consolidado.estado_agg == "abierto" ) & (self.consolidado.proveedor == "linio colombia s.a.s.")] #TODO revisar posicion
-        linio.to_excel(f"output/arvchivos/linio/linio_{self.dt_string}.xlsx",sheet_name = 'DB', index=False)
-        print(" --Se ha guardado el informe de F3 proveedor linio ubicacion: output/arvchivos/linio")
+        linio.to_excel(f"{path}/linio_{self.dt_string}.xlsx",sheet_name = 'DB', index=False)
+        print(f" --Se ha guardado el informe de F3 proveedor linio ubicacion: {path}")
     
     def save_duplicados(self):
+        path = self.path + "/archivos/duplicados"
         duplicados = self.consolidado.loc[(self.consolidado.estado_agg == "abierto" ) & (self.consolidado.local_agg != "NAN")  & (self.consolidado.folio_f12.notna()) & (self.consolidado.duplicado.notna())]
-        duplicados.to_excel(f"output/arvchivos/duplicados/duplicados_{self.dt_string}.xlsx",sheet_name = 'DB', index=False)
-        print(" --Se ha guardado el informe de F3 duplicados ubicacion: output/arvchivos/duplicados")
+        duplicados.to_excel(f"{path}/duplicados_{self.dt_string}.xlsx",sheet_name = 'DB', index=False)
+        print(f" --Se ha guardado el informe de F3 duplicados ubicacion: {path}")
 
     def save_f3_sin_f12(self):
+        path = self.path + "/archivos/f3 sin f12"
         f3_sin_f12 = self.consolidado.loc[self.consolidado.folio_f12.isna() & (self.consolidado.estado_agg == "abierto")]
-        f3_sin_f12.to_excel(f"output/arvchivos/f3 sin f12/f3_sin_f12_{self.dt_string}.xlsx",sheet_name = 'DB', index=False)
-        print(" --Se ha guardado el informe de F3 sin F12 ubicacion: output/arvchivos/f3 sin f12")
+        f3_sin_f12.to_excel(f"{path}/f3_sin_f12_{self.dt_string}.xlsx",sheet_name = 'DB', index=False)
+        print(f" --Se ha guardado el informe de F3 sin F12 ubicacion: /archivos/f3 sin f12")
 
     def save_dfs(self, lista_dist):
-        path = f'output/distribucion/{self.dt_string}'
+        path = self.path +f"/digitadores/{self.dt_string}"
         mkdir(path)
         self.guardar_consolidado()
         for digitador, df in lista_dist:
@@ -182,7 +184,7 @@ class F3MKP():
         self.save_duplicados()
 
     def unir_planillas_d(self,folder):
-        path = f'input/resultados_digitadores/{folder}'
+        path = self.path +f"/digitadores/{folder}"
         files_names = [f for f in listdir(path) if isfile(join(path, f))]
         files_store = []
         for i in files_names: 
@@ -297,9 +299,10 @@ class F3MKP():
         return dist_digitadores
 
     def save_f3_a_validar(self):
+        path = self.path + "/archivos/f3 a confirmar"   
         validar = self.consolidado.loc[self.consolidado.tipificacion_1 =="Soporte válido",["nro_devolucion","folio_f12","proveedor","rut_proveedor","local","estado_descrip"]]
-        validar.to_excel(f"output/arvchivos/f3 a confirmar/f3_a_confirmar_{self.dt_string}.xlsx",sheet_name = 'DB', index=False)
-        print("-- Se guardó el archivo f3 a confirmar ubicación: output/arvchivos/f3 a confirmar")
+        validar.to_excel(f"{path}/f3_a_confirmar_{self.dt_string}.xlsx",sheet_name = 'DB', index=False)
+        print(f"-- Se guardó el archivo f3 a confirmar ubicación: {path}")
 
     def calculos_correo (self):
         x_estado_desc= self.planilla.groupby(['estado_descrip']).agg({'cant*costoprmd': 'sum', 'nro_devolucion': 'nunique'}).reset_index()
