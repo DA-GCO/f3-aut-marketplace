@@ -1,6 +1,4 @@
 import getpass
-from sklearn.cluster import mean_shift
-from sqlalchemy import false
 from python.f3_mkp import F3MKP
 import python.constants as const
 from datetime import datetime
@@ -207,7 +205,7 @@ def menu_general():
             message()
             f3mkp.build_planilla()
             planilla = f3mkp.get_planilla()
-            path = f'output/planillas/{dt_string}_F3_MKP.xlsx'
+            path = f'{f3mkp.path}/output_planillas/{dt_string}_F3_MKP.xlsx'
             planilla.to_excel(path, index=False)  # Database saving
             print('# Output: --------------------------------------------------------------')
             print(f'  -- Out::La planilla fue guardada en: {path} \n')
@@ -234,23 +232,4 @@ def menu_general():
         else: 
             print('Ingrese una opción valida (0-5)')
 
-
-
-
 menu_general()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
