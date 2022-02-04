@@ -300,7 +300,7 @@ class F3MKP():
 
     def save_f3_a_validar(self):
         path = self.path + "/archivos/f3 a confirmar"   
-        validar = self.consolidado.loc[self.consolidado.tipificacion_1 =="Soporte válido",["nro_devolucion","folio_f12","proveedor","rut_proveedor","local","estado_descrip"]]
+        validar = self.consolidado.loc[self.consolidado.tipificacion_1 =="Soporte válido",["nro_devolucion","folio_f12","proveedor","rut_proveedor","local","estado_descrip"]] #TODO hay que modificar el filtro.
         validar.to_excel(f"{path}/f3_a_confirmar_{self.dt_string}.xlsx",sheet_name = 'DB', index=False)
         print(f"-- Se guardó el archivo f3 a confirmar ubicación: {path}")
 
