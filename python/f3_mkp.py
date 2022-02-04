@@ -84,7 +84,7 @@ class F3MKP():
 
     def load_srx_files(self) -> None:
         # Files loading
-        self.kpi = pd.read_excel(f"input/datos_srx/{self.kpi_name}.xlsx", usecols=["F3", "PRD_UPC","RTV_NOTES", "USR"], dtype=str)  # Load kpi file
+        self.kpi = pd.read_excel(f"{self.path}/datos_srx/{self.kpi_name}.xlsx", usecols=["F3", "PRD_UPC","RTV_NOTES", "USR"], dtype=str)  # Load kpi file
         self.planilla = self.f3c.clean_f3()   # Load f3 db
 
     def load_consolidado(self) -> None:
@@ -99,8 +99,6 @@ class F3MKP():
                       'f3_corresponde':'dg_f3_corresponde'
                                             },)
 
-     
-        
     def get_planilla(self):
         return self.planilla
     
@@ -214,9 +212,10 @@ class F3MKP():
         self.consolidado["indice_f3"] = pd.to_numeric(self.consolidado.indice_f3) #TODO revisar posicion
         self.consolidado.loc[(~self.consolidado.indice_f3.isin(si_cambio)) & (self.consolidado.tipificacion_1.isna()), ["digitador_responsable", "entregado_a_adm" ]] = np.nan
         
-    def guardar_consolidado(self):    
-        self.consolidado.to_excel(f'consolidado/consolidado_f3_marketplace.xlsx',sheet_name = 'DB', index=False) 
-        print("--El consolidado se guardó ubicación: consolidado/consolidado_f3_marketplace.xlsx")
+    def guardar_consolidado(self):
+        path = self.path + "/consolidado" 
+        self.consolidado.to_excel(f'{path}/consolidado_f3_marketplace.xlsx',sheet_name = 'DB', index=False) 
+        print(f"--El consolidado se guardó ubicación: {path}")
     
     def agregar_gestionados(self, si_cambio, dist_digitadores):
         dist_digitadores = dist_digitadores.set_index("indice_f3")
