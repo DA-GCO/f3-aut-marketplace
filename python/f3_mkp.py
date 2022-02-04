@@ -1,6 +1,3 @@
-# Libraries
-from importlib.resources import path
-from unittest.mock import patch
 import pandas as pd
 from datetime import datetime
 import numpy as np
@@ -11,12 +8,11 @@ from python.f3_cleaning import F3Cleaning
 import plotly.express as px
 from python.cl_cleaning import CleaningText as ct 
 
-
 Fecha = datetime.now().strftime('%d-%m-%Y')
 
 class F3MKP():
-    dt_string   = datetime.now().strftime('%y%m%d')
-    kpi         = pd.DataFrame()
+    dt_string = datetime.now().strftime('%y%m%d')
+    kpi = pd.DataFrame()
     consolidado = pd.DataFrame()
     planilla = pd.DataFrame()
     digitadores = const.get_digitadores()
@@ -28,6 +24,7 @@ class F3MKP():
         self.path = "python/config/path.txt"
         with open(self.path, "r") as tf:
                 self.path = tf.read()
+                self.path =self.path.replace("\\","/")
         tf.close()
 
     def build_planilla(self):
@@ -84,7 +81,7 @@ class F3MKP():
 
     def load_srx_files(self) -> None:
         # Files loading
-        self.kpi = pd.read_excel(f"{self.path}/datos_srx/{self.kpi_name}.xlsx", usecols=["F3", "PRD_UPC","RTV_NOTES", "USR"], dtype=str)  # Load kpi file
+        self.kpi = pd.read_excel(f"{self.path}/input_planillas/{self.kpi_name}.xlsx", usecols=["F3", "PRD_UPC","RTV_NOTES", "USR"], dtype=str)  # Load kpi file
         self.planilla = self.f3c.clean_f3()   # Load f3 db
 
     def load_consolidado(self) -> None:
@@ -96,8 +93,7 @@ class F3MKP():
                       'nombre_del_seller_en_el_destinatario':'dg_seller_en_destinatario',
                       'direccion_del_seller_corresponde':'dg_direccion_seller',
                       'dg_f12_corresponde':'dg_f12_f11_corresponde', 
-                      'f3_corresponde':'dg_f3_corresponde'
-                                            },)
+                      'f3_corresponde':'dg_f3_corresponde'},)
 
     def get_planilla(self):
         return self.planilla
@@ -108,7 +104,7 @@ class F3MKP():
     def get_f3_user_df(self):
         # Planilla and kpi merge
         self.kpi = self.kpi.rename(columns={"F3":"nro_devolucion","RTV_NOTES":"rtv_notes","PRD_UPC":"upc", 'USR':'usuario_creacion'})
-        pmk      = self.planilla.merge(self.kpi, how="left", on=["nro_devolucion", "upc"])
+        pmk = self.planilla.merge(self.kpi, how="left", on=["nro_devolucion", "upc"])
         return pmk 
 
     def set_estado_agg(self):
