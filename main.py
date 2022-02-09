@@ -215,7 +215,7 @@ def menu_general():
             message()
             f3mkp.build_planilla()
             planilla = f3mkp.get_planilla()
-            path = f'{f3mkp.path}output_planillas/{dt_string}_F3_MKP.xlsx'
+            path = f'{f3mkp.path}/output_planillas/{dt_string}_F3_MKP.xlsx'
             planilla.to_excel(path, index=False)  # Database saving
             print('# Output: --------------------------------------------------------------')
             print(f'  -- Out::La planilla fue guardada en: {path} \n')
