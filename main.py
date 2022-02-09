@@ -1,6 +1,4 @@
 import getpass
-from sklearn.cluster import mean_shift
-from sqlalchemy import false
 from python.f3_mkp import F3MKP
 import python.constants as const
 from datetime import datetime
@@ -242,23 +240,4 @@ def menu_general():
         else: 
             print('Ingrese una opción valida (0-5)')
 
-
-
-
 menu_general()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
