@@ -162,7 +162,7 @@ class F3MKP():
         div = np.array_split(df_a_distribuir_f, len(digitadores))
         lista_df_x_digitador = []
         for i, df in enumerate(div): 
-            digitador = digitadores[i]
+            digitador = digitadores[i+1]
             df['digitador_responsable'] = digitador
             self.consolidado.loc[df.index, "digitador_responsable"] = digitador
             lista_df_x_digitador.append([ digitador , df])
