@@ -31,6 +31,26 @@ def pausa():
     print()
     msvcrt.getch()
 
+def menu_redistribucion(filter_2,distri_inicial,digitadores=const.get_digitadores()):
+    menu = True
+    while  menu == True: 
+        message("¿Existe algún archivo de redistribución? S/N: ")
+        res = input()
+        res = res.lower()
+        menu = True
+        if res == "s":
+            message("Ingrese el nombre del archivo para redistribuir: ")
+            file=input()
+            filter_7, filter_8 = f3mkp.redistribucion(file,filter_2)
+            df_a_distribuir_f = f3mkp.unir_filtros(distri_inicial,filter_7,filter_8)
+            f3mkp.dividir_planilla(df_a_distribuir_f,digitadores)
+            menu = False
+        elif res == "n":
+            f3mkp.dividir_planilla(distri_inicial,digitadores)
+            menu = False
+        else:
+            print("    -- Out: Opción no valida")
+
 def menu_configuracion():
     menu_config = True
     while menu_config == True:
@@ -132,9 +152,10 @@ def menu_distribucion ():
         message('  ++ In: Seleccione la opción que desea realizar: ')
         opc = int(input())
         if opc == 1 :
-            message()
+            message() #TODO revisar performance usuario
             f3mkp.build_consolidado()
-            f3mkp.div_planilla()
+            filter_2, distri_inicial=f3mkp.distribucion_inicial()
+            menu_redistribucion(filter_2,distri_inicial)
             pausa()
             menu_dist=False
         elif opc == 2:
@@ -155,7 +176,8 @@ def menu_distribucion ():
                 if cont == "n":
                     message()
                     f3mkp.build_consolidado()
-                    f3mkp.div_planilla(list(digitadoreslist.values()))
+                    filter_2, distri_inicial=f3mkp.distribucion_inicial()
+                    menu_redistribucion(filter_2,distri_inicial,list(digitadoreslist.values()))
                     pausa()
                     menu_start="n"
                     menu_dist=False

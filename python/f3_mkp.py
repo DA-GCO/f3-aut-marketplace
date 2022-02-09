@@ -117,26 +117,57 @@ class F3MKP():
 
     def rdate_filter(self, date = '2021-01-01'):
         self.planilla = self.planilla.loc[self.planilla.fecha_reserva >= date].reset_index(drop=True)
+    
+    def distribucion_inicial(self):
+        filter_1 = self.consolidado.loc[(self.consolidado.estado_agg == "abierto") & (self.consolidado.local_agg != "NAN") & (self.consolidado.folio_f12.notna())& (self.consolidado.duplicado.isna())]
+        if filter_1.shape[0] > 0:
+            filter_2 = filter_1.loc[filter_1.dup_f3 != "no"]
+            filter_3 =filter_2.loc[filter_2['digitador_responsable'].isna()]
+            distri_inicial = filter_3.loc[filter_3.tipificacion_1.isna()]
+            return filter_2, distri_inicial
+        else:
+            print ("-- Out: No hay registros para distribuir")
+            return []
 
-    def div_planilla(self, digitadores = list(digitadores.values())):
-        df_a_distribuir_f = self.consolidado.loc[(self.consolidado.estado_agg == "abierto" ) & (self.consolidado.local_agg != "NAN")  & (self.consolidado.folio_f12.notna()) & (self.consolidado.proveedor != "linio colombia s.a.s.") & (self.consolidado.dup_f3 != "no") & (self.consolidado.duplicado.isna()) & (self.consolidado['digitador_responsable'].isna())]
-        if df_a_distribuir_f.shape[0] > 0:
-            cantidad_a_distribuir= df_a_distribuir_f.groupby("local_agg")["nro_devolucion"].count()
-            print(cantidad_a_distribuir)
-            df_a_distribuir_f = df_a_distribuir_f.sort_values(["local_agg","local"])#ordena el df x local_agg y 
-            df_a_distribuir_f = df_a_distribuir_f[const.cols_para_digitador]
-            div = np.array_split(df_a_distribuir_f, len(digitadores))
-            lista_df_x_digitador = []
-            for i, df in enumerate(div): 
-                digitador = digitadores[i]
-                df['digitador_responsable'] = digitador
-                self.consolidado.loc[df.index, "digitador_responsable"] = digitador
-                lista_df_x_digitador.append([ digitador , df])
-            self.save_dfs(lista_df_x_digitador)
-            self.save_repo()
-            
-        else: 
-            print('-- Out: No hay registros para distribuir')
+    def redistribucion(self,file,filter_2):
+        f3_redist = pd.read_excel(f"{self.path}/consolidado/redistribucion/{file}.xlsx",dtype=str)
+        list_redis = f3_redist.nro_devolucion.unique().tolist()
+        filter_4 = filter_2.loc[filter_2.nro_devolucion.isin(list_redis)]
+        if filter_4.shape[0] > 0:
+            filter_5 = filter_4.loc[filter_4.digitador_responsable.notna()]
+            if filter_5.shape[0] > 0:
+                filter_6_t = filter_5.loc[(filter_5.tipificacion_1.notna()) & (filter_5.tipificacion_2.notna()) & (filter_5.tipificacion_3.notna())]
+                filter_6 = filter_5.loc[~((filter_5.tipificacion_1.notna()) & (filter_5.tipificacion_2.notna()) & (filter_5.tipificacion_3.notna()))]
+                if filter_6_t.shape[0] > 0:
+                    print("-- Se generó un archivo de f3 los cuales tienen las 3 tipificaciones diligenciadas ubicacion: {path} ") #TODO Revisar carpeta de creación
+                else:
+                    filter_7 = filter_6.loc[(filter_6.tipificacion_1.notna()) & (filter_6.tipificacion_2.notna()) &(filter_6.tipificacion_2 != "Soporte válido") ]
+                    filter_8 = filter_6.loc[(filter_6.tipificacion_1.notna())  & (filter_6.tipificacion_1 != "Soporte válido")]
+                    if (filter_7.shape[0] > 0) | (filter_8.shape[0] > 0):
+                        return filter_7, filter_8
+            else:
+                print ("-- Out: No hay registros para distribuir")
+            return []
+        else:
+            print ("-- Out: No hay registros para distribuir")
+            return []
+    def unir_filtros(self,distri_inicial,filter_7,filter_8):
+         return pd.concat([distri_inicial,filter_7,filter_8])
+
+    def dividir_planilla(self,df_a_distribuir_f,digitadores):
+        cantidad_a_distribuir= df_a_distribuir_f.groupby("local_agg")["nro_devolucion"].count()
+        print(cantidad_a_distribuir)
+        df_a_distribuir_f = df_a_distribuir_f.sort_values(["local_agg","local"])#ordena el df x local_agg y 
+        df_a_distribuir_f = df_a_distribuir_f[const.cols_para_digitador]
+        div = np.array_split(df_a_distribuir_f, len(digitadores))
+        lista_df_x_digitador = []
+        for i, df in enumerate(div): 
+            digitador = digitadores[i]
+            df['digitador_responsable'] = digitador
+            self.consolidado.loc[df.index, "digitador_responsable"] = digitador
+            lista_df_x_digitador.append([ digitador , df])
+        self.save_dfs(lista_df_x_digitador)
+        self.save_repo()
 
     def save_repo(self):
         path = self.path + "/consolidado"

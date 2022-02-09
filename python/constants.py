@@ -14,7 +14,7 @@ def get_digitadores(): # TODO cambiar lugar, poner en otro archivo, unificar con
               lines = tf.read().split(',')
        for i in enumerate(lines):
               if i[0] != len(lines)-1:
-                     dic_digitadores[i[0]+1] = i[1]
+                     dic_digitadores[i[0]] = i[1]
               else:
                      pass
        tf.close()    
