@@ -162,7 +162,7 @@ def menu_distribucion ():
             menu_start = "s"
             while menu_start == "s":
                 for i in digitadores:
-                    print("       ", i,"-",digitadores[i])
+                    print("       ", i,"-",digitadores[i]) #TODO Unificar en listas 
                 message("   *** In: Seleccione el digitador con el que desea trabajar: ")
                 nro_dig= int(input())
                 digitadoreslist[nro_dig]=digitadores[nro_dig]

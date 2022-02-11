@@ -33,7 +33,7 @@ class F3MKP():
         self.planilla = self.get_f3_user_df()
         duplicados = self.planilla.loc[self.planilla.duplicated(['nro_devolucion', 'upc', 'cantidad'])]
         duplicados.to_excel(f'{self.path}/output_planillas/errores/{self.dt_string}_f3_duplicados.xlsx')
-        self.planilla.drop_duplicates(['nro_devolucion', 'upc', 'cantidad'], inplace=True)
+        # self.planilla.drop_duplicates(['nro_devolucion', 'upc', 'cantidad'], inplace=True)
         self.set_estado_agg()
         self.set_local_agg()
         self.search_f11_f12()
@@ -53,19 +53,20 @@ class F3MKP():
         self.planilla.drop(['ncp_f11', 'ncp_f12','rtv_notes', 'rtv_f11','rtv_f12'], axis=1, inplace=True)
     
     def ident_dupl(self):
-        planilla_auxf11  = self.planilla.groupby(["folio_f11","upc","cantidad"])["nro_devolucion"].nunique().reset_index()
-        planilla_auxf12 = self.planilla.groupby(["folio_f12","upc","cantidad"])["nro_devolucion"].nunique().reset_index()
-        indice_f11 = planilla_auxf11.loc[planilla_auxf11.nro_devolucion > 1].folio_f11
-        indice_f12 = planilla_auxf12.loc[planilla_auxf12.nro_devolucion > 1].folio_f12
-        self.planilla.loc[self.planilla.folio_f11.isin(indice_f11), "duplicado"] = "duplicado"
-        self.planilla.loc[self.planilla.folio_f12.isin(indice_f12), "duplicado"] = "duplicado"
-        grup = self.planilla.groupby(['nro_devolucion','folio_f12'])["upc"].nunique().reset_index()  # TODO  pasar a metodo y .loc[duplicated('nro_devolucion), 'dup_f3'] ='y'.loc[~duplicated('nro_devolucion), 'dup_f3'] ='n'
-        dup = grup.loc[grup.upc > 1].nro_devolucion
-        self.planilla.loc[self.planilla.nro_devolucion.isin(dup),'dup_f3'] = "no"
-        self.planilla.reset_index()
-        duplicados = self.planilla.loc[self.planilla.nro_devolucion.isin(dup)].iloc[:,0:1].reset_index()
-        list_si = duplicados.drop_duplicates("nro_devolucion").iloc[:,0]
-        self.planilla.loc[self.planilla.index.isin(list_si),"dup_f3"] = "si"
+        planilla = self.planilla.loc[self.planilla.estado_descrip != "anulado"]
+        f11 = planilla.loc[planilla.folio_f11.notna()]
+        f12 = planilla.loc[planilla.folio_f12.notna()]
+        df12 = f12.loc[(f12.duplicated(["folio_f12","upc","cantidad"],keep=False))]
+        df11 = f11.loc[(f11.duplicated(["folio_f11","upc","cantidad"],keep=False))]
+        tf11 = df11.groupby(["folio_f11","upc","cantidad"])["nro_devolucion"].nunique().reset_index()
+        tf11 = tf11.loc[tf11.nro_devolucion > 1]
+        df11 = df11.loc[df11.folio_f11.isin(tf11.folio_f11)]
+        df12 = f12.loc[(f12.duplicated(["folio_f12","upc","cantidad"],keep=False))]
+        tf12 = df12.groupby(["folio_f12","upc","cantidad"])["nro_devolucion"].nunique().reset_index()
+        tf12 = tf12.loc[tf12.nro_devolucion > 1]
+        df12 = df12.loc[df12.folio_f12.isin(tf12.folio_f12)]
+        self.planilla.loc[self.planilla.index.isin(df11.index), "duplicado"] = "S"
+        self.planilla.loc[self.planilla.index.isin(df12.index), "duplicado"] = "S"
 
     def build_consolidado(self):
         self.load_consolidado()
@@ -151,18 +152,20 @@ class F3MKP():
         else:
             print ("-- Out: No hay registros para distribuir")
             return []
+
     def unir_filtros(self,distri_inicial,filter_7,filter_8):
          return pd.concat([distri_inicial,filter_7,filter_8])
 
     def dividir_planilla(self,df_a_distribuir_f,digitadores):
         cantidad_a_distribuir= df_a_distribuir_f.groupby("local_agg")["nro_devolucion"].count()
         print(cantidad_a_distribuir)
+        df_a_distribuir_f = df_a_distribuir_f.loc[~df_a_distribuir_f.duplicated(['nro_devolucion'])]
         df_a_distribuir_f = df_a_distribuir_f.sort_values(["local_agg","local"])#ordena el df x local_agg y 
         df_a_distribuir_f = df_a_distribuir_f[const.cols_para_digitador]
         div = np.array_split(df_a_distribuir_f, len(digitadores))
         lista_df_x_digitador = []
         for i, df in enumerate(div): 
-            digitador = digitadores[i+1]
+            digitador = digitadores[i]
             df['digitador_responsable'] = digitador
             self.consolidado.loc[df.index, "digitador_responsable"] = digitador
             lista_df_x_digitador.append([ digitador , df])
@@ -185,7 +188,7 @@ class F3MKP():
         print(f" --Se ha guardado el informe de F3 proveedor linio ubicacion: {path}")
     
     def save_duplicados(self, path):
-        duplicados = self.consolidado.loc[(self.consolidado.estado_agg == "abierto" ) & (self.consolidado.local_agg != "NAN")  & (self.consolidado.folio_f12.notna()) & (self.consolidado.duplicado.notna())]
+        duplicados = self.consolidado.loc[(self.consolidado.estado_descrip != "anulado" ) & (self.consolidado.duplicado.notna())]
         duplicados.to_excel(f"{path}/{self.dt_string}_duplicados.xlsx",sheet_name = 'DB', index=False)
         print(f" --Se ha guardado el informe de F3 duplicados ubicacion: {path}")
 
