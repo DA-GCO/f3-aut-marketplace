@@ -41,12 +41,12 @@ def menu_redistribucion(filter_2,distri_inicial,digitadores=const.get_digitadore
         if res == "s":
             message("Ingrese el nombre del archivo para redistribuir: ")
             file=input()
-            filter_7, filter_8 = f3mkp.redistribucion(file,filter_2)
-            df_a_distribuir_f = f3mkp.unir_filtros(distri_inicial,filter_7,filter_8)
-            f3mkp.dividir_planilla(df_a_distribuir_f,digitadores)
+            filter_8,filter_6_t = f3mkp.redistribucion(file,filter_2)
+            df_a_distribuir_f = f3mkp.unir_filtros(distri_inicial,filter_8)
+            f3mkp.dividir_planilla(df_a_distribuir_f,digitadores,filter_6_t)
             menu = False
         elif res == "n":
-            f3mkp.dividir_planilla(distri_inicial,digitadores)
+            f3mkp.dividir_planilla(distri_inicial,digitadores,filter_6_t)
             menu = False
         else:
             print("    -- Out: Opción no valida")

@@ -131,32 +131,33 @@ class F3MKP():
             return []
 
     def redistribucion(self,file,filter_2):
-        f3_redist = pd.read_excel(f"{self.path}/consolidado/redistribucion/{file}.xlsx",dtype=str)
-        list_redis = f3_redist.nro_devolucion.unique().tolist()
-        filter_4 = filter_2.loc[filter_2.nro_devolucion.isin(list_redis)]
-        if filter_4.shape[0] > 0:
-            filter_5 = filter_4.loc[filter_4.digitador_responsable.notna()]
-            if filter_5.shape[0] > 0:
-                filter_6_t = filter_5.loc[(filter_5.tipificacion_1.notna()) & (filter_5.tipificacion_2.notna()) & (filter_5.tipificacion_3.notna())]
-                filter_6 = filter_5.loc[~((filter_5.tipificacion_1.notna()) & (filter_5.tipificacion_2.notna()) & (filter_5.tipificacion_3.notna()))]
-                if filter_6_t.shape[0] > 0:
-                    print("-- Se generó un archivo de f3 los cuales tienen las 3 tipificaciones diligenciadas ubicacion: {path} ") #TODO Revisar carpeta de creación
+            f3_redist = pd.read_excel(f"{self.path}/input_planillas/{file}.xlsx",dtype=str)
+            list_redis = f3_redist.nro_devolucion.unique().tolist()
+            filter_4 = filter_2.loc[filter_2.nro_devolucion.isin(list_redis)]
+            if filter_4.shape[0] > 0:
+                filter_5 = filter_4.loc[filter_4.digitador_responsable.notna()]
+                if filter_5.shape[0] > 0:
+                    filter_6_t = filter_5.loc[(filter_5.tipificacion_1.notna()) & (filter_5.tipificacion_2.notna()) & (filter_5.tipificacion_3.notna()) & (filter_5.tipificacion_3 != "Soporte válido")]
+                    filter_6 = filter_5.loc[~((filter_5.tipificacion_1.notna()) & (filter_5.tipificacion_2.notna()) & (filter_5.tipificacion_3.notna()))]
+                    if filter_6.shape[0] > 0:
+                        filter_7 =filter_6.loc[(filter_6.tipificacion_1.notna()) & (filter_6.tipificacion_2 != "Soporte válido") ]
+                        filter_8 = filter_7.loc[(filter_7.tipificacion_1.notna())  & (filter_7.tipificacion_1 != "Soporte válido")]
+                    if filter_6_t.shape[0] > 0:
+                        return filter_8, filter_6_t
+                    else:
+                        print ("-- Out: No hay registros para distribuir")
+                        return[]
                 else:
-                    filter_7 = filter_6.loc[(filter_6.tipificacion_1.notna()) & (filter_6.tipificacion_2.notna()) &(filter_6.tipificacion_2 != "Soporte válido") ]
-                    filter_8 = filter_6.loc[(filter_6.tipificacion_1.notna())  & (filter_6.tipificacion_1 != "Soporte válido")]
-                    if (filter_7.shape[0] > 0) | (filter_8.shape[0] > 0):
-                        return filter_7, filter_8
+                    print ("-- Out: No hay registros para distribuir")
+                return []
             else:
                 print ("-- Out: No hay registros para distribuir")
-            return []
-        else:
-            print ("-- Out: No hay registros para distribuir")
-            return []
+                return []
 
-    def unir_filtros(self,distri_inicial,filter_7,filter_8):
-         return pd.concat([distri_inicial,filter_7,filter_8])
+    def unir_filtros(self,distri_inicial,filter_8):
+         return pd.concat([distri_inicial,filter_8])
 
-    def dividir_planilla(self,df_a_distribuir_f,digitadores):
+    def dividir_planilla(self,df_a_distribuir_f,digitadores,filter_6_t):
         cantidad_a_distribuir= df_a_distribuir_f.groupby("local_agg")["nro_devolucion"].count()
         print(cantidad_a_distribuir)
         df_a_distribuir_f = df_a_distribuir_f.loc[~df_a_distribuir_f.duplicated(['nro_devolucion'])]
@@ -169,7 +170,7 @@ class F3MKP():
             df['digitador_responsable'] = digitador
             self.consolidado.loc[df.index, "digitador_responsable"] = digitador
             lista_df_x_digitador.append([ digitador , df])
-        self.save_dfs(lista_df_x_digitador)
+        self.save_dfs(lista_df_x_digitador,filter_6_t)
         self.save_repo()
 
     def save_repo(self):
@@ -197,7 +198,11 @@ class F3MKP():
         f3_sin_f12.to_excel(f"{path}/{self.dt_string}_f3_sin_f12.xlsx",sheet_name = 'DB', index=False)
         print(f" --Se ha guardado el informe de F3 sin F12 ubicacion: {path}")
 
-    def save_dfs(self, lista_dist):
+    def save_f3_terecera(self, path,filter_6_t):
+        filter_6_t.to_excel(f'{self.path}/distribución/gestión_administrador/{self.dt_string}/f3_tercera_revision.xlsx',sheet_name = 'DB', index=False)
+        print(f" --Se ha guardado el informe de F3 con tres revisiones completadas: {path}")
+
+    def save_dfs(self, lista_dist,filter_6_t):
         path_admin = self.path +f"/distribución/gestión_administrador/{self.dt_string}"
         path_digitador = self.path +f"/distribución/gestión_digitador/{self.dt_string}"
         mkdir(path_admin)
@@ -210,6 +215,7 @@ class F3MKP():
         self.save_linio(path_admin)
         self.save_f3_sin_f12(path_admin)
         self.save_duplicados(path_admin)
+        self.save_f3_terecera(path_admin,filter_6_t)
 
     def unir_planillas_d(self,folder):
         path = self.path +f"/distribución/gestión_digitador/{folder}"
