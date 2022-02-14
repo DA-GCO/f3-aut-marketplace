@@ -12,22 +12,20 @@ dt_string = datetime.now().strftime('%y%m%d')
 class EMAILHANDLER():
 
     def __init__(self) -> None:
+        self.destinatario = input("Ingrese el correo del destinatario: ")
+        self.remitente = input("Ingrese el correo del remitente: ")
+        self.mensaje = MIMEMultipart("related")
         pass
 
-    def header_email():
+    def header_email(self):
+        self.mensaje["From"] = self.destinatario
+        self.mensaje["To"] = self.remitente # TODO destinatario != de quién envía 
+        self.mensaje["Subject"] = "asunto"
 
-        #sender = input("Ingrese su correo: " )
-        #receivers = input("Ingrese el correo del destinatario: " )
-        mensaje = MIMEMultipart("related")
-        mensaje["From"] = lg.user
-        mensaje["To"] = lg.user # TODO destinatario != de quién envía 
-        mensaje["Subject"] = "asunto"
-        return mensaje
-
-    def body():
-        html_estado = open("output/local_agg.html", "r").read()
-        html_abierto = open("output/estado_agg.html","r").read()
-        html_local = open("output/estado_desc.html","r").read()
+    def body(self):
+        html_estado = open("output/archivos correo/local_agg.html", "r").read()
+        html_abierto = open("output/archivos correo/estado_agg.html","r").read()
+        html_local = open("output/archivos correo/estado_desc.html","r").read()
         email_content = f"""
                     <html>
                         <head>
@@ -47,47 +45,47 @@ class EMAILHANDLER():
                     """
         return email_content
 
-    def build_body(email_content,mensaje):
+    def build_body(self,email_content):
         msgAlternative = MIMEMultipart('alternative') 
-        mensaje.attach(msgAlternative)
+        self.mensaje.attach(msgAlternative)
         msgText = MIMEText(email_content, 'html') 
         msgAlternative.attach(msgText)
-        fp = open('output/estado_agg.jpg', 'rb') 
+        fp = open('output/archivos correo/estado_agg.jpg', 'rb') 
         msgImage = MIMEImage(fp.read()) 
         fp.close()
-        fp2 = open('output/local_agg.jpg', 'rb')
+        fp2 = open('output/archivos correo/local_agg.jpg', 'rb')
         msgImage1 = MIMEImage(fp2.read()) 
         fp2.close()
-        fp3 = open('output/estado_desc.jpg', 'rb')
+        fp3 = open('output/archivos correo/estado_desc.jpg', 'rb')
         msgImage2 = MIMEImage(fp3.read()) 
         fp3.close()
-        gr = open("output/estado_desc.jpg", 'rb')
+        gr = open("output/archivos correo/estado_desc.jpg", 'rb')
         msgImage = MIMEImage(gr.read()) 
         gr.close()
 
-        arch = open(f'output/planillas/{dt_string}_F3_MKP.xlsx')
-        #arch = open('output/planillas/220131_F3_MKP.xlsx','rb')
-        msgAttach = MIMEApplication(arch.read())
-        arch.close()
-        msgAttach.add_header('Content-Disposition', '<excel1>')
-        #Adjuntando excel
-        part = MIMEBase('application', "octet-stream")
-        part.set_payload(open('output/planillas/220131_F3_MKP.xlsx', "rb").read())
-        encode_base64(part)
-        part.add_header(f'Content-Disposition', 'attachment; filename={dt_string}_F3_MKP.xlsx')
-        mensaje.attach(part)
+        # arch = open(f'output/planillas/{dt_string}_F3_MKP.xlsx')
+        # # arch = open('output/planillas/220131_F3_MKP.xlsx','rb')
+        # msgAttach = MIMEApplication(arch.read())
+        # arch.close()
+        # msgAttach.add_header('Content-Disposition', '<excel1>')
+        # Adjuntando excel
+        # part = MIMEBase('application', "octet-stream")
+        # part.set_payload(open('output/planillas/220131_F3_MKP.xlsx', "rb").read())
+        # encode_base64(part)
+        # part.add_header(f'Content-Disposition', 'attachment; filename={dt_string}_F3_MKP.xlsx')
+        # self.mensaje.attach(part)
 
 
         msgImage.add_header('Content-ID', '<image1>') 
-        mensaje.attach(msgImage)
+        self.mensaje.attach(msgImage)
         msgImage1.add_header('Content-ID', '<image2>') 
-        mensaje.attach(msgImage1)
+        self.mensaje.attach(msgImage1)
         msgImage2.add_header('Content-ID', '<image3>') 
-        mensaje.attach(msgImage2)
+        self.mensaje.attach(msgImage2)
 
-    def send_email(mensaje):
+    def send_email(self,correo,contraseña):
         smtp = SMTP("smtp-mail.outlook.com", 587)
         smtp.starttls()
-        smtp.login(lg.user,lg.pasword)
-        smtp.sendmail("@f.com","@falabella.com.",mensaje.as_string())
+        smtp.login(correo,contraseña)
+        smtp.sendmail(self.remitente,self.destinatario,self.mensaje.as_string())
         smtp.quit() 
