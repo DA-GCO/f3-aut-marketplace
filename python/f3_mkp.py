@@ -9,6 +9,7 @@ import plotly.express as px
 from python.cl_cleaning import CleaningText as ct 
 
 
+
 Fecha = datetime.now().strftime('%d-%m-%Y')
 
 class F3MKP():
@@ -121,14 +122,22 @@ class F3MKP():
     
     def distribucion_inicial(self):
         filter_1 = self.consolidado.loc[(self.consolidado.estado_agg == "abierto") & (self.consolidado.local_agg != "NAN") & (self.consolidado.folio_f12.notna())& (self.consolidado.duplicado.isna())]
-        if filter_1.shape[0] > 0:
+        rev = self.revisar_dil()
+        if (filter_1.shape[0] > 0):
             filter_2 = filter_1.loc[filter_1.dup_f3 != "no"]
             filter_3 =filter_2.loc[filter_2['digitador_responsable'].isna()]
             distri_inicial = filter_3.loc[filter_3.tipificacion_1.isna()]
-            return filter_2, distri_inicial
+            return filter_2, distri_inicial,rev
         else:
             print ("-- Out: No hay registros para distribuir")
-            return []
+            return None, None, rev
+
+    def revisar_dil(self):
+        filter_1_1 = self.consolidado.loc[((self.consolidado.tipificacion_1 == "Revisar diligenciamiento") | (self.consolidado.tipificacion_2 == "Revisar diligenciamiento") | (self.consolidado.tipificacion_3 == "Revisar diligenciamiento"))]
+        filter_1_2 = filter_1_1.loc[filter_1_1.tipificacion_3 == "Revisar diligenciamiento" ]
+        filter_1_3 = filter_1_1.loc[((filter_1_1.tipificacion_2 == "Revisar diligenciamiento") & (filter_1_1.tipificacion_3 != "Soporte válido"))]
+        filter_1_4 = filter_1_1.loc[((filter_1_1.tipificacion_1 == "Revisar diligenciamiento") & (filter_1_1.tipificacion_2 != "Soporte válido") & (filter_1_1.tipificacion_3 != "Soporte válido"))]
+        return pd.concat([filter_1_2,filter_1_3,filter_1_4])
 
     def redistribucion(self,file,filter_2):
             f3_redist = pd.read_excel(f"{self.path}/input_planillas/{file}.xlsx",dtype=str)
@@ -154,10 +163,7 @@ class F3MKP():
                 print ("-- Out: No hay registros para distribuir")
                 return []
 
-    def unir_filtros(self,distri_inicial,filter_8):
-         return pd.concat([distri_inicial,filter_8])
-
-    def dividir_planilla(self,df_a_distribuir_f,digitadores,filter_6_t):
+    def dividir_planilla(self,df_a_distribuir_f,digitadores):
         cantidad_a_distribuir= df_a_distribuir_f.groupby("local_agg")["nro_devolucion"].count()
         print(cantidad_a_distribuir)
         df_a_distribuir_f = df_a_distribuir_f.loc[~df_a_distribuir_f.duplicated(['nro_devolucion'])]
@@ -170,7 +176,7 @@ class F3MKP():
             df['digitador_responsable'] = digitador
             self.consolidado.loc[df.index, "digitador_responsable"] = digitador
             lista_df_x_digitador.append([ digitador , df])
-        self.save_dfs(lista_df_x_digitador,filter_6_t)
+        self.save_dfs(lista_df_x_digitador)
         self.save_repo()
 
     def save_repo(self):
@@ -202,7 +208,7 @@ class F3MKP():
         filter_6_t.to_excel(f'{self.path}/distribución/gestión_administrador/{self.dt_string}/f3_tercera_revision.xlsx',sheet_name = 'DB', index=False)
         print(f" --Se ha guardado el informe de F3 con tres revisiones completadas: {path}")
 
-    def save_dfs(self, lista_dist,filter_6_t):
+    def save_dfs(self, lista_dist):
         path_admin = self.path +f"/distribución/gestión_administrador/{self.dt_string}"
         path_digitador = self.path +f"/distribución/gestión_digitador/{self.dt_string}"
         mkdir(path_admin)
@@ -215,7 +221,6 @@ class F3MKP():
         self.save_linio(path_admin)
         self.save_f3_sin_f12(path_admin)
         self.save_duplicados(path_admin)
-        self.save_f3_terecera(path_admin,filter_6_t)
 
     def unir_planillas_d(self,folder):
         path = self.path +f"/distribución/gestión_digitador/{folder}"

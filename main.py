@@ -5,6 +5,7 @@ from datetime import datetime
 import python.llave.bot_keys as bot_keys
 from python.bot_teams import BotKatherine
 from python.adm_email import EMAILHANDLER # TODO llamar la clase 
+import pandas as pd
 import time 
 import sys 
 import os 
@@ -31,7 +32,7 @@ def pausa():
     print()
     msvcrt.getch()
 
-def menu_redistribucion(filter_2,distri_inicial,digitadores=const.get_digitadores()):
+def menu_redistribucion(filter_2, distri_inicial ,rev ,digitadores=const.get_digitadores()):
     menu = True
     while  menu == True: 
         message("¿Existe algún archivo de redistribución? S/N: ")
@@ -42,15 +43,16 @@ def menu_redistribucion(filter_2,distri_inicial,digitadores=const.get_digitadore
             message("Ingrese el nombre del archivo para redistribuir: ")
             file=input()
             filter_8,filter_6_t = f3mkp.redistribucion(file,filter_2)
-            df_a_distribuir_f = f3mkp.unir_filtros(distri_inicial,filter_8)
-            f3mkp.dividir_planilla(df_a_distribuir_f,digitadores,filter_6_t)
+            df_a_distribuir_f = pd.concat([distri_inicial,filter_8,rev])
+            f3mkp.dividir_planilla(df_a_distribuir_f,digitadores)
+            f3mkp.save_f3_terecera(f3mkp.path +f"/distribución/gestión_administrador/{f3mkp.dt_string}",filter_6_t)
             menu = False
         elif res == "n":
-            f3mkp.dividir_planilla(distri_inicial,digitadores,filter_6_t)
+            df_a_distribuir_f = pd.concat([distri_inicial,rev])
+            f3mkp.dividir_planilla(df_a_distribuir_f,digitadores)
             menu = False
         else:
             print("    -- Out: Opción no valida")
-
 def menu_configuracion():
     menu_config = True
     while menu_config == True:
@@ -154,8 +156,8 @@ def menu_distribucion ():
         if opc == 1 :
             message() #TODO revisar performance usuario
             f3mkp.build_consolidado()
-            filter_2, distri_inicial=f3mkp.distribucion_inicial()
-            menu_redistribucion(filter_2,distri_inicial)
+            filter_2, distri_inicial,rev=f3mkp.distribucion_inicial()
+            menu_redistribucion(filter_2,distri_inicial,rev)
             pausa()
             menu_dist=False
         elif opc == 2:
@@ -176,7 +178,7 @@ def menu_distribucion ():
                 if cont == "n":
                     message()
                     f3mkp.build_consolidado()
-                    filter_2, distri_inicial=f3mkp.distribucion_inicial()
+                    filter_2, distri_inicial, rev =f3mkp.distribucion_inicial()
                     menu_redistribucion(filter_2,distri_inicial,list(digitadoreslist.values()))
                     pausa()
                     menu_start="n"
